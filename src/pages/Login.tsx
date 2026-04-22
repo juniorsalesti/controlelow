@@ -7,12 +7,20 @@ import { TrendingUp, ShieldCheck, Zap } from 'lucide-react';
 export default function Login() {
   const navigate = useNavigate();
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleLogin = async () => {
+    setError(null);
     try {
       await loginWithGoogle();
       navigate('/');
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      if (err.code === 'auth/unauthorized-domain') {
+        setError('Este domínio não está autorizado no Firebase Console. Adicione a URL do Vercel em Authentication > Settings > Authorized domains.');
+      } else {
+        setError('Erro ao fazer login. Verifique se pop-ups estão permitidos ou tente novamente.');
+      }
     }
   };
 
@@ -34,6 +42,12 @@ export default function Login() {
             A central de comando definitiva para suas operações low ticket
           </p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl text-xs text-red-600 dark:text-red-400">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-4 mb-8">
           {[
