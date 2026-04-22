@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "Operation": {
+      "title": "Operation",
+      "description": "A marketing operation being tracked",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "product": { "type": "string" },
+        "country": { "type": "string" },
+        "trafficPlatform": { "type": "string" },
+        "salesPlatform": { "type": "string" },
+        "offerLink": { "type": "string" },
+        "averageTicket": { "type": "number" },
+        "status": { 
+          "type": "string",
+          "enum": [
+            "Teste de criativo", "Teste de público", "Validação", 
+            "Pré escala", "Escala", "Escala agressiva", "Pausada", "Negativa"
+          ] 
+        },
+        "totalInvested": { "type": "number" },
+        "totalRevenue": { "type": "number" },
+        "totalProfit": { "type": "number" },
+        "roi": { "type": "number" },
+        "startDate": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "product", "status"]
+    },
+    "DailyLog": {
+      "title": "DailyLog",
+      "description": "Daily metrics for an operation",
+      "type": "object",
+      "properties": {
+        "operationId": { "type": "string" },
+        "date": { "type": "string" },
+        "invested": { "type": "number" },
+        "revenue": { "type": "number" },
+        "profit": { "type": "number" },
+        "roi": { "type": "number" }
+      },
+      "required": ["operationId", "date", "invested", "revenue"]
+    }
+  },
+  "firestore": {
+    "/operations/{operationId}": {
+      "schema": "Operation",
+      "description": "Collection of marketing operations"
+    },
+    "/dailyLogs/{logId}": {
+      "schema": "DailyLog",
+      "description": "Collection of daily performance logs"
+    }
+  }
+}

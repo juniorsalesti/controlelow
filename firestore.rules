@@ -1,0 +1,84 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Operations Collection
+    match /operations/{operationId} {
+      function isValidOperation(data) {
+        return data.userId == request.auth.uid &&
+               data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+               data.product is string && data.product.size() <= 200 &&
+               data.status in [
+                 'Teste de criativo', 'Teste de público', 'Validação', 
+                 'Pré escala', 'Escala', 'Escala agressiva', 'Pausada', 'Negativa'
+               ];
+      }
+
+      allow create: if isSignedIn() && isValidOperation(incoming());
+      
+      allow read, list: if isSignedIn() && existing().userId == request.auth.uid;
+      
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && isValidOperation(incoming()) && (
+        // Allow updating status or logs-related totals
+        incoming().diff(existing()).affectedKeys().hasAny(['status', 'updatedAt', 'totalInvested', 'totalRevenue', 'totalProfit', 'roi', 'notes'])
+      );
+      
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // DailyLogs Collection
+    match /dailyLogs/{logId} {
+      function isValidLog(data) {
+        return data.operationId is string && 
+               data.invested is number &&
+               data.revenue is number &&
+               data.profit is number &&
+               data.date is string;
+      }
+
+      // Ensure the user owns the parent operation before adding logs
+      function canWriteLog(opId) {
+        return isSignedIn() && get(/databases/$(database)/documents/operations/$(opId)).data.userId == request.auth.uid;
+      }
+
+      allow create: if canWriteLog(incoming().operationId) && isValidLog(incoming());
+      
+      allow read, list: if isSignedIn() && canWriteLog(existing().operationId);
+      
+      allow delete: if isSignedIn() && canWriteLog(existing().operationId);
+
+      allow update: if canWriteLog(existing().operationId) && isValidLog(incoming());
+    }
+    
+    // Test collection for readiness check
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}
